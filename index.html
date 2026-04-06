@@ -3,66 +3,238 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Karthik Arumugam</title>
+  <title>Cricket Gate Game</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #0a0a0a;
+      background: #1a2e1a;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
       height: 100vh;
-      overflow: hidden;
       font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
     }
-    canvas { display: block; }
+    canvas {
+      display: block;
+      border: 2px solid #4a7a4a;
+      border-radius: 8px;
+    }
+    #ui {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    #ui h1 { font-size: 24px; letter-spacing: 2px; color: #ffd700; }
+    #ui p  { font-size: 13px; color: #aaa; margin-top: 4px; }
+    #score-display {
+      color: #fff;
+      margin-top: 12px;
+      font-size: 18px;
+      letter-spacing: 1px;
+    }
+    #message {
+      height: 32px;
+      margin-top: 8px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffd700;
+      letter-spacing: 2px;
+    }
   </style>
 </head>
 <body>
-  <canvas id="c"></canvas>
+  <div id="ui">
+    <h1>CRICKET GATE</h1>
+    <p>Click / tap when the ball reaches the bat zone to hit!</p>
+  </div>
+  <canvas id="c" width="600" height="220"></canvas>
+  <div id="score-display">Score: <span id="score">0</span></div>
+  <div id="message"></div>
+
   <script>
-    const canvas = document.getElementById('c');
-    const ctx = canvas.getContext('2d');
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-    let alpha = 0;
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#0a0a0a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 48px "Segoe UI", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Karthik Arumugam', canvas.width / 2, canvas.height / 2 - 20);
-      ctx.font = '20px "Segoe UI", sans-serif';
-      ctx.fillStyle = '#aaaaaa';
-      ctx.fillText('Portfolio', canvas.width / 2, canvas.height / 2 + 40);
-      ctx.globalAlpha = 1;
-      const barWidth = 300, barHeight = 4;
-      const barX = (canvas.width - barWidth) / 2;
-      const barY = canvas.height / 2 + 90;
-      ctx.fillStyle = '#222';
-      ctx.beginPath();
-      ctx.roundRect(barX, barY, barWidth, barHeight, 2);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.roundRect(barX, barY, barWidth * alpha, barHeight, 2);
-      ctx.fill();
-      alpha += 0.008;
-      if (alpha >= 1) {
-        window.location.href = 'main.html';
-        return;
-      }
-      requestAnimationFrame(draw);
+    const canvas  = document.getElementById('c');
+    const ctx     = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const msgEl   = document.getElementById('message');
+
+    const W = canvas.width, H = canvas.height;
+    const PITCH_Y    = H - 50;
+    const STUMP_X    = 80;
+    const STUMP_H    = 60;
+    const BAT_X      = STUMP_X + 30;
+    const HIT_ZONE_L = BAT_X - 30;
+    const HIT_ZONE_R = BAT_X + 30;
+    const BOWL_FROM  = W - 40;
+
+    let ballX, ballY, ballSpeedX, ballBounced;
+    let batAngle  = 0;
+    let batSwing  = false;
+    let score     = 0;
+    let runs      = 0;
+    let msgTimer  = 0;
+    let gameOver  = false;
+
+    function resetBall() {
+      ballX       = BOWL_FROM;
+      ballY       = PITCH_Y - 10;
+      ballSpeedX  = -(4 + Math.random() * 2);
+      ballBounced = false;
+      batSwing    = false;
+      batAngle    = 0;
     }
-    draw();
-    window.addEventListener('resize', () => {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
+
+    function showMessage(text, color) {
+      msgEl.textContent = text;
+      msgEl.style.color = color || '#ffd700';
+      msgEl.style.opacity = 1;
+      msgTimer = 90;
+    }
+
+    function calcRuns(ballXAtHit) {
+      const centre = (HIT_ZONE_L + HIT_ZONE_R) / 2;
+      const dist   = Math.abs(ballXAtHit - centre);
+      if (dist < 8)  return 6;
+      if (dist < 18) return 4;
+      if (dist < 28) return 2;
+      return 1;
+    }
+
+    function hit() {
+      if (gameOver || batSwing) return;
+      batSwing = true;
+
+      if (ballX >= HIT_ZONE_L && ballX <= HIT_ZONE_R) {
+        runs = calcRuns(ballX);
+        score += runs;
+        scoreEl.textContent = score;
+
+        if (runs === 6) {
+          showMessage('SIX! 🏏', '#00ff88');
+          gameOver = true;
+          setTimeout(() => {
+            window.location.href = 'main.html';
+          }, 1200);
+          return;
+        } else if (runs === 4) {
+          showMessage('FOUR!', '#ffd700');
+        } else {
+          showMessage(runs + ' run' + (runs > 1 ? 's' : ''), '#fff');
+        }
+        setTimeout(resetBall, 900);
+      } else {
+        showMessage('BOWLED OUT!', '#ff4444');
+        gameOver = true;
+        setTimeout(() => {
+          score  = 0;
+          scoreEl.textContent = 0;
+          gameOver = false;
+          resetBall();
+        }, 1200);
+      }
+    }
+
+    function drawGround() {
+      ctx.fillStyle = '#2d5a27';
+      ctx.fillRect(0, PITCH_Y, W, H - PITCH_Y);
+      ctx.fillStyle = '#c8a96e';
+      ctx.fillRect(STUMP_X - 10, PITCH_Y, W - STUMP_X - 30, 8);
+    }
+
+    function drawStumps() {
+      ctx.strokeStyle = '#f5f0e0';
+      ctx.lineWidth = 4;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(STUMP_X + i * 8, PITCH_Y);
+        ctx.lineTo(STUMP_X + i * 8, PITCH_Y - STUMP_H);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#f5f0e0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(STUMP_X - 8, PITCH_Y - STUMP_H);
+      ctx.lineTo(STUMP_X + 8, PITCH_Y - STUMP_H);
+      ctx.stroke();
+    }
+
+    function drawBat() {
+      ctx.save();
+      ctx.translate(BAT_X, PITCH_Y - 10);
+      const angle = batSwing ? -Math.PI / 3 * Math.min(batAngle, 1) : 0;
+      ctx.rotate(angle);
+      ctx.fillStyle = '#c8a96e';
+      ctx.fillRect(-5, -55, 10, 55);
+      ctx.fillStyle = '#8b4513';
+      ctx.fillRect(-3, -70, 6, 18);
+      ctx.restore();
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#cc2200';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, 10, 0.3, Math.PI - 0.3);
+      ctx.strokeStyle = '#ff8888';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    function drawHitZone() {
+      ctx.fillStyle = 'rgba(255,255,100,0.08)';
+      ctx.fillRect(HIT_ZONE_L, PITCH_Y - STUMP_H - 10, HIT_ZONE_R - HIT_ZONE_L, STUMP_H + 10);
+    }
+
+    function updateBall() {
+      if (gameOver) return;
+      ballX += ballSpeedX;
+      if (!ballBounced && ballX < W / 2) {
+        ballY = PITCH_Y - 30;
+        ballBounced = true;
+      }
+      if (ballX < STUMP_X - 20 && !batSwing) {
+        showMessage('BOWLED OUT!', '#ff4444');
+        gameOver = true;
+        setTimeout(() => {
+          score  = 0;
+          scoreEl.textContent = 0;
+          gameOver = false;
+          resetBall();
+        }, 1200);
+      }
+    }
+
+    function loop() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#87ceeb';
+      ctx.fillRect(0, 0, W, PITCH_Y);
+      drawGround();
+      drawHitZone();
+      drawStumps();
+      drawBat();
+      drawBall();
+      updateBall();
+      if (batSwing && batAngle < 1) batAngle += 0.12;
+      if (msgTimer > 0) {
+        msgTimer--;
+        if (msgTimer === 0) msgEl.textContent = '';
+      }
+      requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener('click', hit);
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'Enter') hit();
     });
+
+    resetBall();
+    loop();
   </script>
 </body>
 </html>

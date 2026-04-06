@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Karthik Arumugam</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    let alpha = 0;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 48px "Segoe UI", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Karthik Arumugam', canvas.width / 2, canvas.height / 2 - 20);
+      ctx.font = '20px "Segoe UI", sans-serif';
+      ctx.fillStyle = '#aaaaaa';
+      ctx.fillText('Portfolio', canvas.width / 2, canvas.height / 2 + 40);
+      ctx.globalAlpha = 1;
+      const barWidth = 300, barHeight = 4;
+      const barX = (canvas.width - barWidth) / 2;
+      const barY = canvas.height / 2 + 90;
+      ctx.fillStyle = '#222';
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barWidth, barHeight, 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barWidth * alpha, barHeight, 2);
+      ctx.fill();
+      alpha += 0.008;
+      if (alpha >= 1) {
+        window.location.href = 'main.html';
+        return;
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+    window.addEventListener('resize', () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>

@@ -151,7 +151,7 @@ function upd(){
   }
   if(state==='enter'){
     alpha=Math.min(alpha+0.012,1);
-    if(alpha>=1) window.location.href='main.html';
+    if(alpha>=1){sessionStorage.setItem('unlocked','true');window.location.href='main.html';}
   }
 }
 

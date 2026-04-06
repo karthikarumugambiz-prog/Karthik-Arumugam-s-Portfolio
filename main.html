@@ -6,16 +6,23 @@
   <title>Karthik Arumugam – Portfolio</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+    body { background: #0a0a0a; color: #ffffff; font-family: 'Segoe UI', monospace; min-height: 100vh; }
     nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 48px; border-bottom: 1px solid #1a1a1a; }
-    nav .logo { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+    nav .logo { font-size: 20px; font-weight: 700; letter-spacing: 2px; color: #FFE000; }
     nav ul { list-style: none; display: flex; gap: 32px; }
     nav ul li a { color: #aaa; text-decoration: none; font-size: 14px; transition: color 0.2s; }
     nav ul li a:hover { color: #fff; }
-    .hero { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 120px 24px; }
+    .hero { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 120px 24px 60px; }
+    .hero .tag { font-size: 12px; letter-spacing: 3px; color: #FFE000; margin-bottom: 16px; }
     .hero h1 { font-size: clamp(36px, 6vw, 72px); font-weight: 700; line-height: 1.1; margin-bottom: 20px; }
-    .hero p { font-size: 18px; color: #aaa; max-width: 520px; line-height: 1.6; }
-    footer { text-align: center; padding: 24px; color: #444; font-size: 13px; border-top: 1px solid #1a1a1a; }
+    .hero p { font-size: 18px; color: #aaa; max-width: 520px; line-height: 1.6; margin-bottom: 40px; }
+    .btn { padding: 12px 32px; border: 2px solid #FFE000; color: #FFE000; text-decoration: none; font-size: 14px; letter-spacing: 2px; transition: background 0.2s, color 0.2s; }
+    .btn:hover { background: #FFE000; color: #000; }
+    .sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; background: #1a1a1a; border-top: 1px solid #1a1a1a; }
+    .section { background: #0a0a0a; padding: 48px 40px; }
+    .section h2 { font-size: 11px; letter-spacing: 3px; color: #FFE000; margin-bottom: 16px; }
+    .section p { color: #555; font-size: 14px; line-height: 1.6; }
+    footer { text-align: center; padding: 24px; color: #333; font-size: 12px; border-top: 1px solid #1a1a1a; }
   </style>
 </head>
 <body>
@@ -28,9 +35,25 @@
     </ul>
   </nav>
   <section class="hero">
-    <h1>Hi, I'm Karthik Arumugam</h1>
-    <p>Developer &amp; designer building thoughtful digital experiences.</p>
+    <div class="tag">PORTFOLIO</div>
+    <h1>Karthik Arumugam</h1>
+    <p>You hit a six to get here. Now explore the work.</p>
+    <a class="btn" href="#projects">VIEW PROJECTS</a>
   </section>
+  <div class="sections">
+    <div class="section" id="about">
+      <h2>ABOUT</h2>
+      <p>Coming soon — bio and background.</p>
+    </div>
+    <div class="section" id="projects">
+      <h2>PROJECTS</h2>
+      <p>Coming soon — showcase of work.</p>
+    </div>
+    <div class="section" id="contact">
+      <h2>CONTACT</h2>
+      <p>Coming soon — get in touch.</p>
+    </div>
+  </div>
   <footer>&copy; 2026 Karthik Arumugam</footer>
 </body>
 </html>

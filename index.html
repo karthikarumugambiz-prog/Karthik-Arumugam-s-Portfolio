@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cricket Gate</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: monospace;
+  }
+  canvas {
+    image-rendering: pixelated;
+    border: 4px solid #333;
+    max-width: 100%;
+    cursor: pointer;
+    display: block;
+  }
+  p { color: #555; font-size: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<canvas id="gc" width="760" height="380"></canvas>
+<p>SPACE or TAP to play</p>
+<script>
+const cv=document.getElementById('gc'),cx=cv.getContext('2d'),W=cv.width,H=cv.height;
+let state='idle',animF=0,ballX,ballY,isSwing=false,bowlT=0,hitT=0,alpha=0;
+let particles=[],stumpShake=false,shakeT=0,blinkOn=true;
+setInterval(()=>blinkOn=!blinkOn,400);
+const GNDX=Math.round(H*.63),BOWLX=110,BATX=620,STPX=660,STPY=GNDX-55,SPD=8;
+
+function pr(x,y,w,h,c){cx.fillStyle=c;cx.fillRect(Math.floor(x),Math.floor(y),w,h);}
+function cloud(x,y){[[0,10,30,12],[8,4,22,10],[16,0,26,14],[32,6,18,10]].forEach(([a,b,w,h])=>pr(x+a,y+b,w,h,'#fff'));}
+
+function bg(){
+  pr(0,0,W,GNDX,'#4888EC');cloud(60,45);cloud(280,30);cloud(530,55);
+  pr(0,GNDX,W,H-GNDX,'#2A8A2A');
+  pr(BOWLX+30,GNDX-6,BATX-BOWLX-50,6,'#C8A96E');
+  pr(BOWLX+34,GNDX-6,4,6,'#fff');pr(BATX-26,GNDX-6,4,6,'#fff');
+  pr(10,10,138,42,'rgba(0,0,0,0.7)');
+  cx.fillStyle='#FFE000';cx.font='bold 11px monospace';cx.fillText('CRICKET GATE',18,28);
+  cx.fillStyle='#aaa';cx.font='10px monospace';cx.fillText('HIT A SIX TO ENTER',18,44);
+}
+
+function stumps(){
+  const sx=stumpShake?STPX+(Math.random()-.5)*5:STPX;
+  pr(sx-8,STPY-5,22,4,'#CC9944');
+  [-4,2,8].forEach(d=>pr(sx+d,STPY,4,44,'#EECC88'));
+}
+
+function bowler(p){
+  const x=BOWLX,y=GNDX-74,r=p>5;
+  pr(x-8,GNDX-5,38,6,'rgba(0,0,0,0.18)');
+  pr(x+2,y+44,8,r?28:24,'#fff');pr(x+14,y+44,8,r?20:24,'#fff');
+  pr(x,y+68+(r?4:0),12,6,'#222');pr(x+12,y+64-(r?4:0),12,6,'#222');
+  pr(x,y+20,24,26,'#EE2222');
+  if(r){pr(x+20,y+8,8,22,'#FFCC88');pr(x+24,y+4,8,8,'#DE2020');}
+  else{pr(x+20,y+22,8,16,'#FFCC88');pr(x-4,y+24,8,16,'#FFCC88');}
+  pr(x+4,y+4,16,16,'#FFCC88');pr(x+2,y-1,20,10,'#CC1111');pr(x+2,y+7,3,6,'#CC1111');
+  pr(x+8,y+8,3,3,'#222');pr(x+14,y+8,3,3,'#222');
+}
+
+function batsman(sw){
+  const x=BATX-32,y=GNDX-76;
+  pr(x-6,GNDX-5,42,6,'rgba(0,0,0,0.18)');
+  pr(x+4,y+44,10,30,'#eee');pr(x+18,y+44,10,30,'#eee');
+  pr(x+2,y+70,14,6,'#222');pr(x+18,y+70,14,6,'#222');
+  pr(x+2,y+20,26,26,'#1133EE');
+  if(sw){pr(x-12,y+12,16,10,'#FFAA66');pr(x-28,y-10,14,38,'#CC8800');pr(x-32,y+26,20,6,'#AA6600');}
+  else{pr(x-4,y+28,8,16,'#FFAA66');pr(x-10,y+36,8,30,'#CC8800');pr(x-14,y+62,12,6,'#AA6600');}
+  pr(x+28,y+24,10,14,'#FFAA66');pr(x+6,y+4,16,16,'#FFAA66');pr(x+4,y-1,20,10,'#1133EE');
+  pr(x+22,y+8,4,8,'#888');pr(x+10,y+8,3,3,'#222');pr(x+16,y+8,3,3,'#222');
+}
+
+function drawBall(){
+  if(state!=='bowling2'&&state!=='hitwin')return;
+  pr(ballX-7,ballY-7,14,14,'#DE2020');
+  pr(ballX-1,ballY-6,2,12,'rgba(255,255,255,0.4)');
+  pr(ballX-6,ballY-1,12,2,'rgba(255,255,255,0.4)');
+}
+
+function pts(){
+  particles=particles.filter(p=>p.life>0);
+  particles.forEach(p=>{cx.globalAlpha=p.life;pr(p.x,p.y,p.s,p.s,p.c);p.x+=p.vx;p.y+=p.vy;p.vy+=0.4;p.life-=0.025;});
+  cx.globalAlpha=1;
+}
+
+function spawn(x,y,cols,n=24){
+  for(let i=0;i<n;i++)particles.push({
+    x,y,vx:(Math.random()-.5)*10,vy:(Math.random()-.85)*12,
+    c:cols[0|Math.random()*cols.length],life:1,s:4+0|Math.random()*8
+  });
+}
+
+function ui(){
+  cx.textAlign='center';
+  if(state==='idle'){
+    pr(W/2-220,H/2-100,440,155,'rgba(0,0,0,0.82)');
+    cx.fillStyle='#FFE000';cx.font='bold 28px monospace';cx.fillText('CRICKET GATE',W/2,H/2-58);
+    cx.fillStyle='#ccc';cx.font='bold 12px monospace';
+    cx.fillText('THE SITE IS GUARDED',W/2,H/2-28);
+    cx.fillText('HIT A SIX TO GET IN',W/2,H/2-10);
+    if(blinkOn){cx.fillStyle='#FFE000';cx.font='bold 15px monospace';cx.fillText('[ PRESS SPACE / TAP TO BOWL ]',W/2,H/2+28);}
+  }
+  if(state==='bowling'){cx.fillStyle='#fff';cx.font='bold 15px monospace';cx.fillText('LOADING...',W/2,90);}
+  if(state==='hitwin'&&blinkOn){cx.fillStyle='#FFFF00';cx.font='bold 34px monospace';cx.fillText('SWING! [SPACE]',W/2,90);}
+  if(state==='hit'){
+    cx.fillStyle='#FFE000';cx.font='bold 54px monospace';cx.fillText('SIX!',W/2,H/2-20);
+    cx.fillStyle='#fff';cx.font='bold 16px monospace';cx.fillText('LOADING PORTFOLIO...',W/2,H/2+28);
+  }
+  if(state==='out'){
+    pr(W/2-190,H/2-80,380,130,'rgba(160,0,0,0.88)');
+    cx.fillStyle='#fff';cx.font='bold 68px monospace';cx.fillText('OUT!',W/2,H/2-4);
+    cx.fillStyle='#ffaaaa';cx.font='bold 13px monospace';
+    cx.fillText('YOU MISSED! PRESS SPACE / TAP TO RETRY',W/2,H/2+46);
+  }
+  if(state==='enter'){
+    pr(0,0,W,H,`rgba(0,0,0,${alpha})`);
+    if(alpha>0.6){
+      cx.fillStyle=`rgba(255,255,255,${(alpha-0.6)*2.5})`;
+      cx.font='bold 26px monospace';cx.fillText('WELCOME TO THE PORTFOLIO!',W/2,H/2);
+    }
+    if(alpha>=1){
+      cx.fillStyle='rgba(255,255,255,0.7)';
+      cx.font='bold 14px monospace';cx.fillText('[ PRESS SPACE TO PLAY AGAIN ]',W/2,H/2+40);
+    }
+  }
+  cx.textAlign='left';
+}
+
+function upd(){
+  animF++;
+  if(stumpShake){shakeT++;if(shakeT>30){stumpShake=false;shakeT=0;}}
+  if(state==='bowling'){bowlT++;if(bowlT>55){state='bowling2';ballX=BOWLX+50;ballY=GNDX-44;}}
+  if(state==='bowling2'){
+    ballX+=SPD;
+    if(ballX>BATX-110)state='hitwin';
+    if(ballX>STPX&&state==='bowling2')doOut();
+  }
+  if(state==='hitwin'){ballX+=SPD;if(ballX>STPX)doOut();}
+  if(state==='hit'){
+    hitT++;isSwing=hitT<25;
+    if(hitT===1)spawn(BATX-20,GNDX-50,['#FFE000','#FF6600','#FF2222','#fff','#00FF44'],50);
+    if(hitT>100){state='enter';alpha=0;}
+  }
+  if(state==='enter'){
+    alpha=Math.min(alpha+0.012,1);
+    if(alpha>=1){sessionStorage.setItem('unlocked','true');window.location.href='main.html';}
+  }
+}
+
+function doOut(){
+  if(state==='out')return;
+  state='out';stumpShake=true;shakeT=0;
+  spawn(STPX,STPY,['#EECC88','#CC9944','#fff'],18);
+}
+
+function act(){
+  if(state==='idle'){state='bowling';bowlT=0;isSwing=false;particles=[];}
+  else if(state==='hitwin'){state='hit';hitT=0;isSwing=true;}
+  else if(state==='out'){state='idle';particles=[];alpha=0;}
+}
+
+function frame(){
+  cx.clearRect(0,0,W,H);upd();bg();
+  const ph=state==='idle'?0:(state==='bowling'?Math.min(bowlT/5,10):10);
+  bowler(ph);batsman(isSwing);stumps();drawBall();pts();ui();
+  requestAnimationFrame(frame);
+}
+
+cv.setAttribute('tabindex','0');
+cv.addEventListener('click',act);
+cv.addEventListener('touchend',e=>{e.preventDefault();act();});
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();act();}});
+frame();
+</script>
+</body>
+</html>
